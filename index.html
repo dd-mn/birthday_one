@@ -80,6 +80,33 @@
 
     html { scroll-behavior: smooth; }
 
+    .scroll-hint {
+      position: fixed;
+      left: 50%;
+      bottom: 1.5rem;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+      z-index: 150;
+      animation: scrollHintFloat 2s ease-in-out infinite;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .scroll-hint.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    .scroll-hint svg { width: 1.25rem; height: 1.25rem; }
+
+    @keyframes scrollHintFloat {
+      50% { transform: translate(-50%, 6px); }
+    }
+
     .section-nav {
       position: fixed;
       right: 1.5rem;
@@ -170,6 +197,7 @@
       z-index: 10;
       max-width: 900px;
       width: 100%;
+      margin-top: calc(100vh - 2rem);
       background: var(--glass-bg);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -351,7 +379,7 @@
     }
 
     .play-btn {
-      background: linear-gradient(135deg, var(--primary-accent), #c2185b);
+      background: linear-gradient(135deg, #b9f6ca, #69d98b);
       border: none;
       color: #fff;
       width: 40px;
@@ -361,13 +389,13 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 4px 15px rgba(255, 64, 129, 0.4);
+      box-shadow: 0 4px 15px rgba(105, 217, 139, 0.4);
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
     .play-btn:hover {
       transform: scale(1.1);
-      box-shadow: 0 6px 20px rgba(255, 64, 129, 0.6);
+      box-shadow: 0 6px 20px rgba(105, 217, 139, 0.6);
     }
 
     /* Photo Slots (Polaroid Style) */
@@ -470,7 +498,7 @@
       position: absolute;
       width: 100%;
       border-radius: 12px 12px 6px 6px;
-      background: linear-gradient(to right, #f48fb1, #f06292);
+      background: linear-gradient(to right, #b9f6ca, #69d98b);
       border: 2px solid rgba(255, 255, 255, 0.3);
     }
 
@@ -484,7 +512,7 @@
       left: 15px;
       width: 110px;
       height: 40px;
-      background: linear-gradient(to right, #ff80ab, #ff4081);
+      background: linear-gradient(to right, #d9fbe3, #8ee8a8);
     }
 
     .icing {
@@ -492,7 +520,7 @@
       top: 0;
       width: 100%;
       height: 12px;
-      background: #ffffff;
+      background: #effff3;
       border-radius: 12px 12px 8px 8px;
     }
 
@@ -636,7 +664,7 @@
 
     /* Celebration Button */
     .fire-celebration-btn {
-      background: linear-gradient(135deg, #ff4081, #ff80ab, #ffd54f);
+      background: linear-gradient(135deg, #b9f6ca, #69d98b, #d9fbe3);
       background-size: 200% 200%;
       border: none;
       color: #121212;
@@ -645,7 +673,7 @@
       padding: 1rem 2.5rem;
       border-radius: 50px;
       cursor: pointer;
-      box-shadow: 0 8px 30px rgba(255, 64, 129, 0.5);
+      box-shadow: 0 8px 30px rgba(105, 217, 139, 0.5);
       transition: transform 0.2s ease, box-shadow 0.2s ease, background-position 0.5s ease;
       display: flex;
       align-items: center;
@@ -672,7 +700,7 @@
     .fire-celebration-btn:hover {
       transform: scale(1.05);
       background-position: right center;
-      box-shadow: 0 12px 35px rgba(255, 213, 79, 0.6);
+      box-shadow: 0 12px 35px rgba(185, 246, 202, 0.6);
     }
 
     .timeline-section, .reasons-section {
@@ -886,6 +914,11 @@
   </style>
 </head>
 <body>
+
+  <div class="scroll-hint" aria-label="Scroll down to explore">
+    <span>Scroll to explore</span>
+    <i data-lucide="chevron-down" aria-hidden="true"></i>
+  </div>
 
   <nav class="section-nav" aria-label="Page sections">
     <button class="section-dot active" data-target="top" aria-label="Go to top"></button>
@@ -1222,6 +1255,7 @@
     const canvas = document.getElementById('confetti-canvas');
     const ctx = canvas.getContext('2d');
     let particles = [];
+    let fireworks = [];
 
     function resizeCanvas() {
       canvas.width = window.innerWidth;
@@ -1243,6 +1277,59 @@
           rotSpeed: (Math.random() - 0.5) * 10,
           opacity: 1
         });
+      }
+    }
+
+    function fireFireworks(count = 3) {
+      for (let burst = 0; burst < count; burst++) {
+        const centerX = window.innerWidth * (0.08 + Math.random() * 0.84);
+        const centerY = window.innerHeight * (0.08 + Math.random() * 0.52);
+        const color = ['#39ff88', '#00e5ff', '#fff000', '#ff4fd8', '#ff7a18', '#ffffff'][Math.floor(Math.random() * 6)];
+
+        for (let i = 0; i < 110; i++) {
+          const angle = (Math.PI * 2 * i) / 110;
+          const speed = 3 + Math.random() * 5;
+          fireworks.push({
+            x: centerX,
+            y: centerY,
+            previousX: centerX,
+            previousY: centerY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            color,
+            alpha: 1,
+            decay: 0.008 + Math.random() * 0.009
+          });
+        }
+      }
+    }
+
+    function renderFireworks() {
+      for (let i = fireworks.length - 1; i >= 0; i--) {
+        const particle = fireworks[i];
+        particle.previousX = particle.x;
+        particle.previousY = particle.y;
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.vy += 0.04;
+        particle.alpha -= particle.decay;
+
+        if (particle.alpha <= 0) {
+          fireworks.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = particle.alpha;
+        ctx.strokeStyle = particle.color;
+        ctx.lineWidth = 2.5;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = particle.color;
+        ctx.beginPath();
+        ctx.moveTo(particle.previousX, particle.previousY);
+        ctx.lineTo(particle.x, particle.y);
+        ctx.stroke();
+        ctx.restore();
       }
     }
 
@@ -1272,12 +1359,14 @@
         ctx.restore();
       }
 
+      renderFireworks();
+
       requestAnimationFrame(renderConfetti);
     }
     renderConfetti();
 
     document.getElementById('celebrateBtn').addEventListener('click', () => {
-      fireConfetti(120);
+      fireFireworks(7);
     });
 
     /* -------------------------------------------------------------
@@ -1285,6 +1374,7 @@
     -------------------------------------------------------------- */
     const revealItems = document.querySelectorAll('.reveal');
     const sectionDots = document.querySelectorAll('.section-dot');
+    const scrollHint = document.querySelector('.scroll-hint');
     const backToTop = document.getElementById('backToTop');
     const trackedSections = ['top', 'memories', 'reasons', 'wish']
       .map(id => document.getElementById(id));
@@ -1311,6 +1401,7 @@
         const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
         const progress = scrollableHeight > 0 ? (window.scrollY / scrollableHeight) * 100 : 0;
         document.body.style.setProperty('--scroll-progress', `${progress}%`);
+        scrollHint.classList.toggle('hidden', window.scrollY > 0);
         backToTop.classList.toggle('visible', window.scrollY > 500);
 
         let currentSection = 'top';
