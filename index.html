@@ -335,6 +335,32 @@
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
     }
 
+    .audio-widget.audio-hidden {
+      display: none;
+    }
+
+    .audio-progress {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      width: min(220px, 32vw);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      accent-color: var(--secondary-accent);
+      cursor: pointer;
+    }
+
+    .time-display {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      font-variant-numeric: tabular-nums;
+    }
+
     .vinyl-disc {
       width: 48px;
       height: 48px;
@@ -967,12 +993,19 @@
     </div>
 
     <!-- Audio Player Section -->
-    <div class="audio-widget reveal">
+    <div class="audio-widget reveal audio-hidden" id="audioWidget">
       <div class="vinyl-disc" id="vinylDisc"></div>
       <div class="audio-info">
         <!-- EDIT SONG TITLE / ARTIST HERE -->
         <span class="song-title">Birthday Song 🎵</span>
         <span class="song-artist">Click play to listen</span>
+      </div>
+      <div class="audio-progress">
+        <input class="progress-bar" id="audioProgress" type="range" min="0" max="100" value="0" aria-label="Audio progress">
+        <div class="time-display">
+          <span id="audioCurrentTime">0:00</span>
+          <span id="audioDuration">0:00</span>
+        </div>
       </div>
       <button class="play-btn" id="audioToggleBtn" title="Play Music">
         <i data-lucide="play"></i>
@@ -983,9 +1016,12 @@
            Insert your audio file path or URL into the src="" attribute below.
            Example: src="song.mp3" or src="audio/birthday-tune.mp3"
            ========================================================================== -->
-      <audio id="birthdayAudio" loop>
-        <source src="" type="audio/mpeg">
+      <audio id="birthdayAudio">
+        <source src="bdst2.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
+      </audio>
+      <audio id="backgroundAudio" loop preload="auto">
+        <source src="background.mp3" type="audio/mpeg">
       </audio>
     </div>
 
@@ -1086,7 +1122,7 @@
       <p class="section-kicker">Tap through the list</p>
       <h2 class="section-heading" id="reasons-heading">Reasons You Got To Keep The Good Feelings Going</h2>
       <div class="reason-display">
-        <p id="reasonText">Your kindness has makes people happy. 💛</p>
+        <p id="reasonText">Your kindness makes people happy. 💛</p>
       </div>
       <div class="reason-controls">
         <button class="reason-control" id="previousReason" aria-label="Previous reason">
@@ -1130,8 +1166,36 @@
        AUDIO PLAYER CONTROLLER
     -------------------------------------------------------------- */
     const audio = document.getElementById('birthdayAudio');
+    const backgroundAudio = document.getElementById('backgroundAudio');
+    const audioWidget = document.getElementById('audioWidget');
     const audioToggleBtn = document.getElementById('audioToggleBtn');
     const vinylDisc = document.getElementById('vinylDisc');
+    const audioProgress = document.getElementById('audioProgress');
+    const audioCurrentTime = document.getElementById('audioCurrentTime');
+    const audioDuration = document.getElementById('audioDuration');
+    let backgroundStarted = false;
+
+    function startBackgroundAudio() {
+      if (audio.paused && !backgroundStarted) {
+        backgroundStarted = true;
+        backgroundAudio.play().catch(() => {
+          backgroundStarted = false;
+        });
+      }
+    }
+
+    function formatAudioTime(seconds) {
+      if (!Number.isFinite(seconds)) return '0:00';
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = Math.floor(seconds % 60).toString().padStart(2, '0');
+      return `${minutes}:${remainingSeconds}`;
+    }
+
+    function updateAudioProgress() {
+      const progress = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+      audioProgress.value = progress;
+      audioCurrentTime.textContent = formatAudioTime(audio.currentTime);
+    }
 
     function updateAudioUI(isPlaying) {
       if (isPlaying) {
@@ -1146,6 +1210,7 @@
 
     audioToggleBtn.addEventListener('click', () => {
       if (audio.paused) {
+        backgroundAudio.pause();
         audio.play().catch(err => {
           console.warn('Audio play prevented (make sure you added an audio source):', err);
         });
@@ -1154,8 +1219,29 @@
       }
     });
 
-    audio.addEventListener('play', () => updateAudioUI(true));
-    audio.addEventListener('pause', () => updateAudioUI(false));
+    audio.addEventListener('play', () => {
+      backgroundAudio.pause();
+      updateAudioUI(true);
+    });
+    audio.addEventListener('pause', () => {
+      updateAudioUI(false);
+      backgroundAudio.play().catch(() => {});
+    });
+    audio.addEventListener('loadedmetadata', () => {
+      audioDuration.textContent = formatAudioTime(audio.duration);
+      updateAudioProgress();
+    });
+    audio.addEventListener('timeupdate', updateAudioProgress);
+    audio.addEventListener('ended', () => {
+      audio.currentTime = 0;
+      updateAudioProgress();
+      updateAudioUI(false);
+    });
+    audioProgress.addEventListener('input', () => {
+      if (audio.duration) {
+        audio.currentTime = (audioProgress.value / 100) * audio.duration;
+      }
+    });
 
     /* -------------------------------------------------------------
        CAKE BLOW INTERACTION
@@ -1172,8 +1258,13 @@
         
         fireConfetti(180);
 
-        if (audio.paused && audio.getAttribute('src')) {
+        if (audio.paused && audio.querySelector('source')?.getAttribute('src')) {
+          audioWidget.classList.remove('audio-hidden');
+          audioWidget.classList.add('visible');
+          backgroundAudio.pause();
           audio.play().catch(() => {});
+        } else if (audio.paused) {
+          backgroundAudio.play().catch(() => {});
         }
 
         instructions.innerHTML = "🎉 Wish Granted! You're gonna have the best year!";
@@ -1395,6 +1486,7 @@
 
     let scrollTicking = false;
     window.addEventListener('scroll', () => {
+      startBackgroundAudio();
       if (scrollTicking) return;
       scrollTicking = true;
       window.requestAnimationFrame(() => {
