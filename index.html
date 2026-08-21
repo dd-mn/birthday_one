@@ -1485,6 +1485,8 @@
     });
 
     let scrollTicking = false;
+    window.addEventListener('wheel', startBackgroundAudio, { passive: true });
+    window.addEventListener('touchmove', startBackgroundAudio, { passive: true });
     window.addEventListener('scroll', () => {
       startBackgroundAudio();
       if (scrollTicking) return;
